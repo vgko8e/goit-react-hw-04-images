@@ -14,18 +14,19 @@ export class App extends Component {
     page: 1,
     status: 'idle',
     url: null,
+    isModalShow: false,
   };
 
   searchImg = new SearchApiService();
 
   async componentDidUpdate(_, prevState) {
-    const { searchQuery, page } = this.state;
+    const { page, searchQuery } = this.state;
 
     if (searchQuery !== prevState.searchQuery || page !== prevState.page) {
       this.setState({ status: 'pending' });
 
       try {
-        const response = await this.searchImg(searchQuery, page);
+        const response = await this.searchImg.fetchItems(page, searchQuery);
 
         if (response.total === 0) {
           Notify.failure(
@@ -40,7 +41,7 @@ export class App extends Component {
 
         this.setState(prevState => ({
           status: 'resolved',
-          images: [...prevState.images, ...response.hits],
+          images: [...prevState.images, ...response.data.hits],
         }));
       } catch (error) {
         this.setState({ status: 'rejected' });
@@ -80,7 +81,7 @@ export class App extends Component {
       <div>
         <Searchbar onSubmit={this.handleSubmit} />
         {images.length > 0 && (
-          <ImageGallery hits={images} onClick={this.handleImageClick} />
+          <ImageGallery images={images} onClick={this.handleImageClick} />
         )}
         {status === 'pending' && startLoader()}
         {(status === 'rejected' && <h1> Ups... something went wrong</h1>) ||
