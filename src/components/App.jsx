@@ -29,7 +29,6 @@ export class App extends Component {
           Notify.failure('Sorry, no results matching your request', {
             clickToClose: true,
           });
-          this.setState({ images: [] });
           throw new Error();
         }
 
