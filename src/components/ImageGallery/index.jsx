@@ -2,12 +2,12 @@ import PropTypes from 'prop-types';
 import styles from './ImageGallery.module.css';
 import { ImageGalleryItem } from './ImageGalleryItem';
 
-export const ImageGallery = ({ images, onClick }) => {
+export const ImageGallery = ({ images, openModal }) => {
   return (
     <ul className={styles.imageGallery}>
       {images.map(image => {
         return (
-          <ImageGalleryItem key={image.id} image={image} onClick={onClick} />
+          <ImageGalleryItem key={image.id} image={image} onClick={openModal} />
         );
       })}
     </ul>

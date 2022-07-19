@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { Searchbar } from 'components/Searchbar';
-import SearchApiService from '../api';
+import fetchItems from '../api';
 import { Notify } from 'notiflix';
 import { ImageGallery } from 'components/ImageGallery';
 import { startLoader, stopLoader } from 'components/Loader';
@@ -12,39 +12,35 @@ export class App extends Component {
     images: [],
     searchQuery: '',
     page: 1,
-    status: 'idle',
-    url: null,
-    isModalShow: false,
+    showMore: false,
+    imageUrl: null,
   };
 
-  searchImg = new SearchApiService();
-
   async componentDidUpdate(_, prevState) {
-    const { page, searchQuery } = this.state;
+    const { searchQuery, page } = this.state;
 
     if (searchQuery !== prevState.searchQuery || page !== prevState.page) {
-      this.setState({ status: 'pending' });
+      startLoader();
 
       try {
-        const response = await this.searchImg.fetchItems(page, searchQuery);
+        const { data } = await fetchItems(searchQuery, page);
 
-        if (response.total === 0) {
-          Notify.failure(
-            'Sorry, there are no images matching your search query. Please try again.',
-            {
-              clickToClose: true,
-            }
-          );
+        if (!data.total) {
+          Notify.failure('Sorry, no results matching your request', {
+            clickToClose: true,
+          });
           this.setState({ images: [] });
           throw new Error();
         }
 
         this.setState(prevState => ({
-          status: 'resolved',
-          images: [...prevState.images, ...response.data.hits],
+          showMore: true,
+          images: [...prevState.images, ...data.hits],
         }));
       } catch (error) {
-        this.setState({ status: 'rejected' });
+        this.setState({ showMore: false });
+      } finally {
+        stopLoader();
       }
     }
   }
@@ -61,37 +57,24 @@ export class App extends Component {
     }));
   };
 
-  toggleModal = () => {
-    this.setState(prevState => ({
-      isModalShow: !prevState.isModalShow,
-    }));
-  };
-
-  handleImageClick = (largeImageURL, tags) => {
-    this.setState({ largeImageURL, tags });
-    this.toggleModal();
-  };
+  openModal = largeImageURL => this.setState({ imageUrl: largeImageURL });
+  closeModal = () => this.setState({ imageUrl: null });
 
   render() {
-    const { images, page, status, largeImageURL, isModalShow, tags } =
-      this.state;
+    const { images, page, showMore, imageUrl, tags } = this.state;
+    const { handleSubmit, handleLoadMore, openModal, closeModal } = this;
     const isLastPage = Math.round(images.length / 12) < page;
 
     return (
       <div>
-        <Searchbar onSubmit={this.handleSubmit} />
+        <Searchbar onSubmit={handleSubmit} />
         {images.length > 0 && (
-          <ImageGallery images={images} onClick={this.handleImageClick} />
+          <ImageGallery images={images} openModal={openModal} />
         )}
-        {status === 'pending' && startLoader()}
-        {(status === 'rejected' && <h1> Ups... something went wrong</h1>) ||
-          stopLoader()}
-        {status === 'resolved' && !isLastPage && (
-          <Button onClick={this.handleLoadMore} status={status} />
-        )}
-        {isModalShow && largeImageURL && (
-          <Modal onClose={this.toggleModal}>
-            <img src={largeImageURL} alt={tags} />
+        {showMore && !isLastPage && <Button onClick={handleLoadMore} />}
+        {imageUrl && (
+          <Modal onClose={closeModal}>
+            <img src={imageUrl} alt={tags} />
           </Modal>
         )}
       </div>
