@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Searchbar } from 'components/Searchbar';
 import fetchItems from '../api';
 import { Notify } from 'notiflix';
@@ -7,21 +7,20 @@ import { startLoader, stopLoader } from 'components/Loader';
 import { Button } from 'components/Button';
 import { Modal } from 'components/Modal';
 
-export class App extends Component {
-  state = {
-    images: [],
-    searchQuery: '',
-    page: 1,
-    showMore: false,
-    imageUrl: null,
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [showMore, setShowMore] = useState(false);
+  const [imageUrl, setImageUrl] = useState(null);
 
-  async componentDidUpdate(_, prevState) {
-    const { searchQuery, page } = this.state;
+  useEffect(() => {
+    if (searchQuery === '') {
+      return;
+    }
 
-    if (searchQuery !== prevState.searchQuery || page !== prevState.page) {
+    const fetchData = async () => {
       startLoader();
-
       try {
         const { data } = await fetchItems(searchQuery, page);
 
@@ -32,51 +31,47 @@ export class App extends Component {
           throw new Error();
         }
 
-        this.setState(prevState => ({
-          showMore: true,
-          images: [...prevState.images, ...data.hits],
-        }));
+        setShowMore(true);
+        setImages(prevImages => [...prevImages, ...data.hits]);
       } catch (error) {
-        this.setState({ showMore: false });
+        setShowMore(false);
       } finally {
         stopLoader();
       }
-    }
-  }
+    };
 
-  handleSubmit = query => {
-    if (query !== this.state.searchQuery) {
-      this.setState({ searchQuery: query, page: 1, images: [] });
+    fetchData();
+  }, [searchQuery, page]);
+
+  const handleSubmit = query => {
+    if (query !== searchQuery) {
+      setSearchQuery(query);
+      setPage(1);
+      setImages([]);
     }
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
   };
 
-  openModal = largeImageURL => this.setState({ imageUrl: largeImageURL });
-  closeModal = () => this.setState({ imageUrl: null });
+  const openModal = largeImageURL => setImageUrl(largeImageURL);
+  const closeModal = () => setImageUrl(null);
 
-  render() {
-    const { images, page, showMore, imageUrl, tags } = this.state;
-    const { handleSubmit, handleLoadMore, openModal, closeModal } = this;
-    const isLastPage = Math.round(images.length / 12) < page;
+  const isLastPage = Math.round(images.length / 12) < page;
 
-    return (
-      <div>
-        <Searchbar onSubmit={handleSubmit} />
-        {images.length > 0 && (
-          <ImageGallery images={images} openModal={openModal} />
-        )}
-        {showMore && !isLastPage && <Button onClick={handleLoadMore} />}
-        {imageUrl && (
-          <Modal onClose={closeModal}>
-            <img src={imageUrl} alt={tags} />
-          </Modal>
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div>
+      <Searchbar onSubmit={handleSubmit} />
+      {images.length > 0 && (
+        <ImageGallery images={images} openModal={openModal} />
+      )}
+      {showMore && !isLastPage && <Button onClick={handleLoadMore} />}
+      {imageUrl && (
+        <Modal onClose={closeModal}>
+          <img src={imageUrl} alt={imageUrl} />
+        </Modal>
+      )}
+    </div>
+  );
+};
