@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import styles from './ImageGallery.module.css';
 
-export const ImageGalleryItem = ({ image, onClick }) => {
+export const ImageGalleryItem = ({ image, onOpenImage }) => {
   const { id, webformatURL, tags, largeImageURL } = image;
   return (
     <li className={styles.imageGalleryItem}>
@@ -10,7 +10,7 @@ export const ImageGalleryItem = ({ image, onClick }) => {
         className={styles.imageGalleryItem_image}
         src={webformatURL}
         alt={tags}
-        onClick={() => onClick(largeImageURL)}
+        onClick={() => onOpenImage(largeImageURL)}
       />
     </li>
   );
@@ -25,5 +25,5 @@ ImageGalleryItem.propTypes = {
       largeImageURL: PropTypes.string.isRequired,
     })
   ),
-  onClick: PropTypes.func.isRequired,
+  onOpenImage: PropTypes.func.isRequired,
 };
